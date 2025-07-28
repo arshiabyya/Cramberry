@@ -1,30 +1,38 @@
-import logo from './logo.svg';
-import { useEffect, useState } from 'react';
-import './App.css';
+import React, { useEffect, useState } from "react";
 
 function App() {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("Loading...");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/hello')
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch((err) => {
-        console.error('Fetch error:', err);
-        setMessage('Error: Could not fetch from backend');
+    fetch("https://d1def81c6f92.ngrok-free.app/api/hello", {
+      headers: {
+        'ngrok-skip-browser-warning': 'true'
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        setMessage(data.message);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setError(error.message);
+        setMessage('Error loading message');
       });
   }, []);
 
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <h1>Frontend React</h1>
-        <p>Message from backend: {message}</p>
-      </header>
+    <div>
+      <h1>Message from backend: {message}</h1>
     </div>
   );
 }
