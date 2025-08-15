@@ -36,3 +36,51 @@
     transform: rotate(360deg);
   }
 }
+
+/*New CSS for header and logo*/
+.container {
+  position: relative;
+  width: 1440px;
+  height: 1024px;
+  background-color: #f5f5f500;
+}
+
+.Cramberry-Logo {
+  position:absolute;
+  top: 8px;
+  left: 0px;
+  width: 15vw;
+  height: 10vh;
+}
+
+.Left-Sidebar {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  width: 13vw;
+  height: 95vh;
+}
+
+.Background-Bubble {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+}
+
+.Right-Sidebar {
+  position: absolute;
+  top: 10px;
+  right: -50px;
+  width: 8vw;
+  height: 95vh;
+}
+
+.Grid {
+  position: absolute;
+  top: 90px;
+  left: 14vw;
+  width: 74vw;
+  height: 80vh;
+}
