@@ -25,9 +25,65 @@
 .Cramberry-Logo {
   position: absolute; top: 8px; left: 0px; width: 15vw; height: 10vh;
 }
-.Left-Sidebar {
-  position: absolute; top: 20px; left: 10px; width: 13vw; height: 95vh;
+
+.LeftSidebarWrapper {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  width: 13vw;
+  height: 95vh;          /* fixed sidebar height */
+  overflow: hidden;      /* clip anything outside the sidebar */
+  z-index: 4;
 }
+
+.Left-Sidebar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.SidebarFileList {
+  position: absolute;
+  top: 105px;            /* start position inside sidebar */
+  left: 25px;            /* padding from left edge */
+  width: 10vw;           /* fit inside sidebar */
+  bottom: 30px;          /* allow it to stretch to bottom */
+  height: calc(85vh - 90px);  /* fill most of sidebar height */
+  z-index: 5;
+  display: block;             /* use block instead of flex to prevent shrinking */
+  overflow-y: auto;           /* vertical scroll for extra items */
+  overflow-x: hidden;
+  padding-right: 6px;         /* space for scrollbar */
+  background: transparent;
+}
+
+.file-name {
+  font-family: 'Roboto', sans-serif; /* custom font */
+  font-size: 14px;
+  color: white;                     
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.6em;         /* space between lines to prevent squishing */
+  margin-bottom: 6px;         /* spacing between items */
+  cursor: default;
+}
+
+.SidebarFileList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.SidebarFileList::-webkit-scrollbar-thumb {
+  background-color: #ffffff;
+  border-radius: 8px;
+}
+
+.SidebarFileList::-webkit-scrollbar-track {
+  background: #064e38;
+  border-radius: 8px;
+}
+
 .Background-Bubble {
   position: absolute; top: 0px; left: 0px; width: 100vw; height: 100vh;
 }
@@ -68,6 +124,7 @@
 /* dropped items */
 .grid-item {
   position: absolute;
+  z-index: 20;
   width: 180px;
   user-select: none;
   background: rgba(255,255,255,0.95);
@@ -114,7 +171,6 @@
 .grid-item-del {
   border: none;
   pointer-events: auto;
-  z-index: 10;
   background: transparent;
   cursor: pointer;
   font-weight: 700;

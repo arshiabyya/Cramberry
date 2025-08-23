@@ -225,7 +225,15 @@ export default function App() {
         </div>
 
         {/* Other PNG layers */}
-        <img className="Left-Sidebar" src={LeftSidebar} alt="Left Sidebar" style={{ zIndex: 3 }} />
+        <div className="LeftSidebarWrapper">
+          <img className="Left-Sidebar" src={LeftSidebar} alt="Left Sidebar" style={{ zIndex: 3 }} />
+          <div className="SidebarFileList">
+            {items.map((it) => (
+              <div key={it.id} className="file-name">{it.name}</div>
+            ))}
+          </div>
+        </div>
+
         <img className="Right-Sidebar" src={RightSidebar} alt="Right Sidebar" style={{ zIndex: 3 }} />
         <img className="Cramberry-Logo" src={CramberryLogo} alt="Cramberry Logo" style={{ zIndex: 4 }} />
 
