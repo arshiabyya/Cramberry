@@ -151,7 +151,16 @@ export default function App() {
     draggingId.current = null;
   };
 
-  const removeItem = (id) => setItems((prev) => prev.filter((it) => it.id !== id));
+  const removeItem = (id) => {
+  setItems((prev) => {
+    const updated = prev.filter((it) => it.id !== id);
+    try {
+      localStorage.setItem("grid-items-v1", JSON.stringify(updated));
+    } catch {}
+    console.log("Removing item:", id);
+    return updated;
+  });
+};
 
   if (error) {
     return <div>Error: {error}</div>;
@@ -183,8 +192,12 @@ export default function App() {
               key={it.id}
               className="grid-item"
               style={{ left: it.x, top: it.y }}
-              onPointerDown={(e) => onItemPointerDown(e, it.id)}
+              onPointerDown={(e) => {
+                if (e.target.closest(".grid-item-del")) return; // Ignore clicks on delete button
+                onItemPointerDown(e, it.id);
+              }}
             >
+
               {it.type === "image" ? (
                 <img src={it.url} alt={it.name} className="grid-item-thumb" />
               ) : (
@@ -194,7 +207,18 @@ export default function App() {
               )}
               <div className="grid-item-row">
                 <div className="grid-item-name" title={it.name}>{it.name}</div>
-                <button className="grid-item-del" onClick={() => removeItem(it.id)} title="Remove">✕</button>
+                <button
+                  className="grid-item-del"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeItem(it.id);
+                  }}
+                  title="Remove"
+                >
+                  ✕
+                </button>
+
+
               </div>
             </div>
           ))}

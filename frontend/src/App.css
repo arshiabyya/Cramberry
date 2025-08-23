@@ -113,6 +113,8 @@
 
 .grid-item-del {
   border: none;
+  pointer-events: auto;
+  z-index: 10;
   background: transparent;
   cursor: pointer;
   font-weight: 700;
