@@ -121,6 +121,18 @@
   font-weight: 600;
 }
 
+.folder-create-btn {
+  position: absolute;
+  top: 10px;
+  right: 125px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  cursor: pointer;
+  font-weight: 600;
+}
+
 /* dropped items */
 .grid-item {
   position: absolute;
@@ -136,7 +148,7 @@
 .grid-item-thumb {
   width: 100%;
   height: 110px;
-  object-fit: cover;
+  object-fit: contain;  /* instead of cover */
   border-radius: 10px;
   display: block;
   background: #f2f2f2;
@@ -177,3 +189,68 @@
   opacity: 0.6;
 }
 .grid-item-del:hover { opacity: 1; }
+
+/* square drop zone for folder additions */
+
+.folder-drop-zone {
+  width: 50px;
+  height: 50px;
+  margin-top: 5px;
+  border: 2px dashed #aaa;
+  border-radius: 8px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: #555;
+  cursor: pointer; /* changes cursor by default */
+  transition: background 0.2s, border-color 0.2s;
+}
+
+/* When a file is dragged over the drop zone */
+.folder-drop-zone.drag-over {
+  background: #e0f7fa;
+  border-color: #00acc1;
+  cursor: copy; /* changes cursor to indicate drop */
+}
+
+.file-name-indent {
+  margin-left: 20px;
+  font-size: 12px;
+  color: #666;
+}
+
+.folder-remove-zone {
+  width: 30px;
+  height: 30px;
+  border: 2px solid red;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto;
+  cursor: copy;
+  font-weight: bold;
+  color: red;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.folder-remove-zone.drag-over {
+  background: #ffe5e5;
+}
+
+.takeout-highlight {
+  border: 2px dashed #ff6b6b !important;
+  background-color: rgba(255, 107, 107, 0.1) !important;
+  cursor: pointer;
+}
+
+.folder-child {
+  cursor: grab;
+}
+
+.file-name-indent {
+  margin-left: 20px;
+  font-size: 12px;
+  color: #666;
+}

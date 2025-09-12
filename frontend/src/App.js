@@ -1,23 +1,18 @@
-// frontend/src/App.js
 import React, { useEffect, useRef, useState } from "react";
 import { v4 as uuid } from "uuid";
 
-// PNG layers (unchanged)
+//Background Images
 import CramberryLogo from "./images/CramberryLogo.png";
 import LeftSidebar from "./images/LeftSidebar.png";
 import BackgroundBubble from "./images/BackgroundBubble.png";
 import RightSidebar from "./images/RightSidebar.png";
 import GridBG from "./images/Grid.png";
 
-// Your existing button cluster (unchanged)
 import GridButton from "./Buttons";
 
 import "./App.css";
 
 export default function App() {
-  // -------------------------------
-  // Backend “hello” message (unchanged)
-  // -------------------------------
   const [message, setMessage] = useState("Loading...");
   const [error, setError] = useState(null);
 
@@ -39,13 +34,13 @@ export default function App() {
       });
   }, []);
 
-  // -------------------------------
-  // Grid: uploads + dragging
-  // -------------------------------
+// Grid Uploads
+
   const gridRef = useRef(null);
   const inputRef = useRef(null);
 
-  // each item: {id, name, type: 'image'|'file', url, x,y}
+//Item storage
+
   const [items, setItems] = useState(() => {
     try {
       const raw = localStorage.getItem("grid-items-v1");
@@ -61,18 +56,20 @@ export default function App() {
     } catch {}
   }, [items]);
 
-  // convert screen coords to grid-local coords
-  const toGrid = (clientX, clientY) => {
+//Convert screen coords to grid-local coords
+
+  const toGrid = (clientX, clientY) =>
+  {
     const rect = gridRef.current.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
   };
 
-  const API_BASE = process.env.REACT_APP_API_BASE || null; // e.g. http://localhost:3001
+  const API_BASE = process.env.REACT_APP_API_BASE || null;
 
-  // Try uploading to server if API_BASE exists. Otherwise fall back to objectURL for preview only.
+//Upload function
+
   const uploadFile = async (file) => {
     if (!API_BASE) {
-      // client-only preview
       return {
         url: URL.createObjectURL(file),
         originalName: file.name,
@@ -83,7 +80,7 @@ export default function App() {
     fd.append("file", file);
     const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: fd });
     if (!res.ok) throw new Error("Upload failed");
-    const data = await res.json(); // {url, originalName, mime, size}
+    const data = await res.json();
     return {
       url: API_BASE ? `${API_BASE}${data.url}` : data.url,
       originalName: data.originalName,
@@ -95,7 +92,6 @@ export default function App() {
     if (!fileList || !fileList.length) return;
     const files = Array.from(fileList);
 
-    // Upload (or objectURL) in parallel:
     const metas = await Promise.all(files.map(uploadFile));
 
     const toAdd = metas.map((m, i) => ({
@@ -105,11 +101,13 @@ export default function App() {
       url: m.url,
       x: gx + i * 24,
       y: gy + i * 24,
+      parentFolderId: null,
     }));
     setItems((prev) => [...prev, ...toAdd]);
   };
 
-  // Drag & drop handlers on the grid
+// Grid drag and drop
+
   const onGridDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
@@ -117,24 +115,161 @@ export default function App() {
   const onGridDrop = (e) => {
     e.preventDefault();
     const { x, y } = toGrid(e.clientX, e.clientY);
-    addFilesAt(e.dataTransfer.files, x, y);
+
+
+//Check if files are being dropped or being moved out of folder
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0)
+    {
+      addFilesAt(e.dataTransfer.files, x, y);
+    }
+    else
+    {
+      const itemId = e.dataTransfer.getData("text/plain");
+      if(itemId)
+      {
+        moveItemToGrid(itemId, x, y);
+      }
+    }
   };
 
-  // Click-to-upload
+//Moving item out off folder method
+
+const moveItemToGrid = (itemId, x, y) => {
+  setItems((prevItems) => {
+    let itemToMove = null;
+    let newItems = [...prevItems];
+    newItems = newItems.map((item) => {
+      if(item.type === "folder" && item.children){
+        const childIndex = item.children.findIndex(child => child.id === itemId);
+        if (childIndex !== -1 ) {
+          itemToMove = {...item.children[childIndex]};
+          return {
+            ...item,
+            children: item.children.filter(child => child.id !== itemId)
+          };
+        }
+      }
+      return item;
+    });
+    
+    if (itemToMove)
+    {
+      const updatedItem = {
+        ...itemToMove,
+        x: x,
+        y: y,
+        parentFolderId: null
+      };
+      newItems.push(updatedItem);
+    }
+      else
+    {
+      newItems = newItems.map(item =>
+        item.id === itemId ? {...item, x: x, y: y } : item
+      );
+    }
+       return newItems;
+  });
+};
+
+//File picker
+
   const openPicker = () => inputRef.current?.click();
   const onPick = (e) => addFilesAt(e.target.files);
+
+//Create folder
+  
+  const createFolder = (name) => {
+  const folder = {
+    id: uuid(),
+    name: name || "New Folder",
+    type: "folder",   // <--- put this back
+    url: null,
+    x: 40,
+    y: 40,
+    parentFolderId: null,
+    children: [],
+  };
+  return folder; // <--- must return it
+};
+
+//Folder drop handler
+
+const [dragOverFolder, setDragOverFolder] = useState(null);
+
+const [takeOutMode, setTakeOutMode] = useState(false);
+
+
+const handleFolderDrop = (e, folderId) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  
+  const fileId = e.dataTransfer.getData("text/plain");
+  if (!fileId || fileId === folderId) return;
+
+  setItems((prevItems) => {
+    let fileToMove = null;
+    let updatedItems = [...prevItems];
+
+    updatedItems = updatedItems.map((item) => {
+      if (item.id === fileId && !item.parentFolderId)
+      {
+        fileToMove = {...item};
+        return null;
+      } 
+      else if (item.type === "folder" && item.children)
+      {
+        const childIndex = item.children.findIndex(child => child.id === fileId);
+        if (childIndex !== -1) {
+          fileToMove = {...item.children[childIndex]};
+          return{
+            ...item,
+            children: item.children.filter(child => child.id !== fileId)
+          };
+      }
+    }
+    return item;
+    }).filter(Boolean);
+
+    if (!fileToMove) return prevItems;
+
+    updatedItems = updatedItems.map((item) => {
+      if (item.id === folderId && item.type === "folder") {
+        return {
+          ...item,
+          children: [
+            ...(item.children || []),
+            { ...fileToMove, parentFolderId: folderId }
+          ]
+        };
+      }
+      return item;
+    });
+    return updatedItems;
+  });
+  setDragOverFolder(null);
+};
 
   // Drag individual items around
   const draggingId = useRef(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
-  const onItemPointerDown = (e, id) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    draggingId.current = id;
-    const item = items.find((it) => it.id === id);
-    const { x, y } = toGrid(e.clientX, e.clientY);
-    dragOffset.current = { x: x - item.x, y: y - item.y };
+  const onItemPointerDown = (e, itemId) => {
+    const itemRect = e.currentTarget.getBoundingClientRect();
+    dragOffset.current = { x: e.clientX - itemRect.left, y: e.clientY - itemRect.top };
+    draggingId.current = itemId;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
+
+  <button onClick={() => setTakeOutMode((prev) => !prev)} style={{ background: takeOutMode ? "lightcoral" : "lightgray" }}>
+    ➖ Take Out Mode {takeOutMode ? "ON" : "OFF"}
+  </button>
+
+  const clearAllItems = () => {
+  setItems([]); // This clears everything from the grid
+};
 
   const onGridPointerMove = (e) => {
     if (!draggingId.current) return;
@@ -151,9 +286,47 @@ export default function App() {
     draggingId.current = null;
   };
 
+  const takeChildOut = (folderId, childId, x = 100, y = 100) => {
+  setItems((prev) => {
+    let childToMove = null;
+    const updated = prev.map((item) => {
+      if (item.id === folderId && item.type === "folder") {
+        const childIndex = item.children.findIndex(c => c.id === childId);
+        if (childIndex !== -1) {
+          childToMove = { ...item.children[childIndex] };
+          return {
+            ...item,
+            children: item.children.filter(c => c.id !== childId),
+          };
+        }
+      }
+      return item;
+    });
+
+    if (childToMove) {
+      updated.push({
+        ...childToMove,
+        parentFolderId: null,
+        x,
+        y,
+      });
+    }
+    return updated;
+  });
+};
+
   const removeItem = (id) => {
   setItems((prev) => {
-    const updated = prev.filter((it) => it.id !== id);
+    let updated = prev.filter((it) => it.id !== id);
+    updated = updated.map((item) => {
+      if (item.type === "folder" && item.children) {
+        return {
+          ...item,
+          children: item.children.filter(child => child.id !== id)
+        };
+      }
+      return item;
+    });
     try {
       localStorage.setItem("grid-items-v1", JSON.stringify(updated));
     } catch {}
@@ -165,6 +338,7 @@ export default function App() {
   if (error) {
     return <div>Error: {error}</div>;
   }
+  
 
   return (
     <div>
@@ -183,66 +357,176 @@ export default function App() {
           onPointerUp={onGridPointerUp}
         >
           {/* Top-right helper to pick files */}
-          <button className="grid-upload-btn" onClick={openPicker}>+ Add to grid</button>
-          <input ref={inputRef} type="file" multiple onChange={onPick} style={{ display: "none" }} />
+          <button className="grid-upload-btn" onClick={openPicker}>+ Upload file</button>
+          <button className="folder-create-btn" onClick={() => { const newFolder = createFolder(); setItems((prev) => [...prev, newFolder]);}}
+>
+  + Create Folder
+</button>
+  <input ref={inputRef} type="file" multiple onChange={onPick} style={{ display: "none" }} />
 
-          {/* Render placed items */}
-          {items.map((it) => (
+  {/* Render placed items */}
+  {items
+  .filter(it => it.parentFolderId === null || it.parentFolderId === undefined) // only top-level items
+  .map((it) => (
+    <div
+      key={it.id}
+      className="grid-item"
+      style={{ left: it.x, top: it.y }}
+      draggable={true}
+      onPointerDown={(e) => onItemPointerDown(e, it.id)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", it.id);
+      }}
+    >
+      {it.type === "folder" ? (
+        <div className="grid-item-folder-wrapper">
+          <div className="grid-item-folder" title={it.name}>
+            📁 {it.name}
+          </div>
+
+          {/* Square drop files in folder zone */}
+          <div
+            className={`folder-drop-zone ${dragOverFolder === it.id ? "drag-over" : ""}`}
+            onDrop={(e) => handleFolderDrop(e, it.id)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOverFolder(it.id);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragOverFolder(null);
+            }}
+          >
+            ➕
+          </div>
+
+          {/* Square remove-from-folder drop zone */}
+          <div
+            className={`folder-remove-zone ${dragOverFolder === it.id + "-remove" ? "drag-over" : ""}`}
+            onDrop={(e) =>
+              {
+              e.preventDefault();
+              const data = e.dataTransfer.getData("text/plain");
+              if (!data) return;
+
+              // Move file back to grid
+              const { folderId, childId } = JSON.parse(data);
+              const { x, y } = toGrid(e.clientX, e.clientY);
+              if (folderId && childId)
+              {
+                takeChildOut(folderId, childId, x, y);
+              }
+              else
+              {
+                moveItemToGrid(childId, x, y);
+              }
+
+              setDragOverFolder(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOverFolder(it.id + "-remove");
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragOverFolder(null);
+            }}
+          >
+            ➖
+          </div>
+
+          {/* Render children */}
+          {it.children && it.children.map((child) => (
             <div
-              key={it.id}
-              className="grid-item"
-              style={{ left: it.x, top: it.y }}
-              onPointerDown={(e) => {
-                if (e.target.closest(".grid-item-del")) return; // Ignore clicks on delete button
-                onItemPointerDown(e, it.id);
-              }}
+              key={child.id} 
+              draggable
+              onDragStart={(e) => {
+              e.stopPropagation();
+              // tell the drop zone which file & folder this came from
+              e.dataTransfer.setData("text/plain", JSON.stringify({
+                folderId: it.id,
+                childId: child.id
+              }));
+            }}
+            
+            title={child.name}
             >
-
-              {it.type === "image" ? (
-                <img src={it.url} alt={it.name} className="grid-item-thumb" />
+              {child.type === "image" ? (
+                <>
+                  <img
+                    src={child.url}
+                    alt={child.name}
+                    className="grid-item-thumb"
+                    draggable={false}  // 🚫 stops raw image dragging
+                  />
+                  <div className="folder-child-name">{child.name}</div>
+                </>
               ) : (
-                <div className="grid-item-file" title={it.name}>
-                  <span role="img" aria-label="file">📄</span>
-                </div>
+                <>
+                  <div className="grid-item-file" title={child.name}>
+                    📄 {child.name}
+                  </div>
+                  <div className="folder-child-name">{child.name}</div>
+                </>
               )}
-              <div className="grid-item-row">
-                <div className="grid-item-name" title={it.name}>{it.name}</div>
-                <button
-                  className="grid-item-del"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeItem(it.id);
-                  }}
-                  title="Remove"
-                >
-                  ✕
-                </button>
-
-
-              </div>
             </div>
-          ))}
+            ))}
+          </div>
+      ) : it.type === "image" ? (
+        <img src={it.url} alt={it.name} className="grid-item-thumb" />
+      ) : (
+        <div className="grid-item-file" title={it.name}>
+          📄 {it.name}
+        </div>
+      )}
+
+      <div className="grid-item-row">
+        <div className="grid-item-name" title={it.name}>{it.name}</div>
+        <button
+          className="grid-item-del"
+          onClick={(e) => {
+            e.stopPropagation();
+            removeItem(it.id);
+          }}
+          title="Remove"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+))}
+
         </div>
 
         {/* Other PNG layers */}
         <div className="LeftSidebarWrapper">
           <img className="Left-Sidebar" src={LeftSidebar} alt="Left Sidebar" style={{ zIndex: 3 }} />
           <div className="SidebarFileList">
-            {items.map((it) => (
-              <div key={it.id} className="file-name">{it.name}</div>
-            ))}
-          </div>
+          {items.filter(it => !it.parentFolderId).map((it) => (
+            <div key={it.id} className="file-name">{it.name}</div>
+          ))}
+        </div>
+
+
         </div>
 
         <img className="Right-Sidebar" src={RightSidebar} alt="Right Sidebar" style={{ zIndex: 3 }} />
         <img className="Cramberry-Logo" src={CramberryLogo} alt="Cramberry Logo" style={{ zIndex: 4 }} />
 
-        {/* Your button cluster */}
         <GridButton style={{ position: "absolute", top: "0px", left: "1200px", zIndex: 10 }} />
       </div>
 
       <div>
         <h1>Message from backend: {message}</h1>
+        <button onClick={clearAllItems}>Clear All Items</button>
       </div>
     </div>
   );
