@@ -424,7 +424,6 @@ const handleFolderDrop = (e, folderId) => {
               {
                 moveItemToGrid(childId, x, y);
               }
-
               setDragOverFolder(null);
             }}
             onDragOver={(e) => {
