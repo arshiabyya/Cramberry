@@ -1,4 +1,4 @@
-# Fullstack Dummy Project
+# Fullstack Cramberry Website
 
 ## Setup
 

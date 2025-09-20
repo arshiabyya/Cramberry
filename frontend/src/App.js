@@ -520,7 +520,7 @@ const handleFolderDrop = (e, folderId) => {
         <img className="Right-Sidebar" src={RightSidebar} alt="Right Sidebar" style={{ zIndex: 3 }} />
         <img className="Cramberry-Logo" src={CramberryLogo} alt="Cramberry Logo" style={{ zIndex: 4 }} />
 
-        <GridButton style={{ position: "absolute", top: "0px", left: "1200px", zIndex: 10 }} />
+        <GridButton style={{transform: "scale(0.5)", transformOrigin: "center", position: "absolute", top: "-5px", left: "1240px", zIndex: 10 }} />
       </div>
 
       <div>
