@@ -17,7 +17,7 @@ export default function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_NGROK_URL || "https://84e34d8b1d56.ngrok-free.app/api/hello", {
+    fetch(process.env.REACT_APP_NGROK_URL || "https://150118513c5f.ngrok-free.app/api/hello", {
       headers: { "ngrok-skip-browser-warning": "true" },
     })
       .then((response) => {
@@ -486,24 +486,40 @@ const handleFolderDrop = (e, folderId) => {
           📄 {it.name}
         </div>
       )}
-
-      <div className="grid-item-row">
-        <div className="grid-item-name" title={it.name}>{it.name}</div>
-        <button
-          className="grid-item-del"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeItem(it.id);
-          }}
-          title="Remove"
-        >
-          ✕
-        </button>
-      </div>
     </div>
 ))}
 
-        </div>
+</div>
+
+<div
+  className="delete-zone"
+  style={{
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 80,
+    height: 80,
+    background: "red",
+    color: "white",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    cursor: "pointer",
+  }}
+  onDragOver={(e) => e.preventDefault()} // allow drop
+  onDrop={(e) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain"); // item id
+    if (id) {
+      removeItem(id); // delete item
+      console.log("Deleted via trash:", id);
+    }
+  }}
+>
+  🗑 Delete
+</div>
 
         {/* Other PNG layers */}
         <div className="LeftSidebarWrapper">
