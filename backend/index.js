@@ -43,3 +43,8 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Backend is running at http://localhost:${PORT}`);
 });
+
+app.get("/", (_req, res) => {
+  res.send("Hello the backend!");
+});
+

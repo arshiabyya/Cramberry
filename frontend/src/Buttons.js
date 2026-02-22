@@ -1,5 +1,5 @@
 import React from "react";
-import GridButtonImg from "./images/GridButton.png";
+import GridButtonImg from "./assets/GridButton.png";
 
 export default function GridButton({ style }) {
   const handleClick = () => alert("Grid Button Clicked!");

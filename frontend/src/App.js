@@ -2,22 +2,51 @@ import React, { useEffect, useRef, useState } from "react";
 import { v4 as uuid } from "uuid";
 
 //Background Images
-import CramberryLogo from "./images/CramberryLogo.png";
-import LeftSidebar from "./images/LeftSidebar.png";
-import BackgroundBubble from "./images/BackgroundBubble.png";
-import RightSidebar from "./images/RightSidebar.png";
-import GridBG from "./images/Grid.png";
+import LogoImage from "./assets/LogoImage.png"; // New logo image import
+import Canvas from "./assets/Canvas.png";
+import LeftSidebar from "./assets/LeftSidebar.png";
+import GridBG from "./assets/Grid.png";
+import FolderBackground from "./assets/FolderBackground.png";
+import FolderNameBubble from "./assets/FolderNameBubble.png";
+import CollapseFolderButton from "./assets/CollapseFolderButton.png";
+import ExpandFolderButton from "./assets/CollapseFolderButton.png";
+import AddFolderButton from "./assets/AddFileLogo.png";
+import RemoveFolderButton from "./assets/RemoveFileLogo.png";
 
 import GridButton from "./Buttons";
+
+import SidebarFileList from "./SidebarFileList";
 
 import "./App.css";
 
 export default function App() {
   const [message, setMessage] = useState("Loading...");
   const [error, setError] = useState(null);
+  const [expandedFolders, setExpandedFolders] = React.useState({});
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_NGROK_URL || "https://150118513c5f.ngrok-free.app/api/hello", {
+    setItems(prev => {
+      const filtered = prev.filter(
+        item => !(item.id === "root-folder" && item.parentFolderId !== null)
+      );
+    
+    if (!filtered.find(item => item.id === "root-folder")) {
+      return [
+        {
+          id: "root-folder",
+          name: "My Files",
+          type: "folder",
+          x: 40,
+          y: 40,
+          parentFolderId: null,
+        },
+        ...filtered,
+      ];
+    }
+    return filtered;
+  });
+
+    fetch(process.env.REACT_APP_NGROK_URL || "https://44b5-2601-646-9900-2ad0-ed49-c99f-ba-3a87.ngrok-free.app/api/hello", {
       headers: { "ngrok-skip-browser-warning": "true" },
     })
       .then((response) => {
@@ -88,7 +117,7 @@ export default function App() {
     };
   };
 
-  const addFilesAt = async (fileList, gx = 40, gy = 40) => {
+ const addFilesAt = async (fileList, gx = 40, gy = 40, folderId = "root-folder") => {
     if (!fileList || !fileList.length) return;
     const files = Array.from(fileList);
 
@@ -101,10 +130,12 @@ export default function App() {
       url: m.url,
       x: gx + i * 24,
       y: gy + i * 24,
-      parentFolderId: null,
+      parentFolderId: "root-folder", // assign folder dynamically
     }));
+
     setItems((prev) => [...prev, ...toAdd]);
   };
+
 
 // Grid drag and drop
 
@@ -136,42 +167,15 @@ export default function App() {
 //Moving item out off folder method
 
 const moveItemToGrid = (itemId, x, y) => {
-  setItems((prevItems) => {
-    let itemToMove = null;
-    let newItems = [...prevItems];
-    newItems = newItems.map((item) => {
-      if(item.type === "folder" && item.children){
-        const childIndex = item.children.findIndex(child => child.id === itemId);
-        if (childIndex !== -1 ) {
-          itemToMove = {...item.children[childIndex]};
-          return {
-            ...item,
-            children: item.children.filter(child => child.id !== itemId)
-          };
-        }
-      }
-      return item;
-    });
-    
-    if (itemToMove)
-    {
-      const updatedItem = {
-        ...itemToMove,
-        x: x,
-        y: y,
-        parentFolderId: null
-      };
-      newItems.push(updatedItem);
-    }
-      else
-    {
-      newItems = newItems.map(item =>
-        item.id === itemId ? {...item, x: x, y: y } : item
-      );
-    }
-       return newItems;
-  });
+  setItems(prevItems =>
+    prevItems.map(item =>
+      item.id === itemId
+        ? { ...item, x, y, parentFolderId: null } // remove from folder
+        : item
+    )
+  );
 };
+
 
 //File picker
 
@@ -189,7 +193,6 @@ const moveItemToGrid = (itemId, x, y) => {
     x: 40,
     y: 40,
     parentFolderId: null,
-    children: [],
   };
   return folder; // <--- must return it
 };
@@ -205,50 +208,25 @@ const handleFolderDrop = (e, folderId) => {
   e.preventDefault();
   e.stopPropagation();
 
-  
-  const fileId = e.dataTransfer.getData("text/plain");
-  if (!fileId || fileId === folderId) return;
+  const data = e.dataTransfer.getData("text/plain");
+  if (!data) return;
 
-  setItems((prevItems) => {
-    let fileToMove = null;
-    let updatedItems = [...prevItems];
+  let childId;
+  try {
+    // If dragging from a folder, data is JSON
+    const parsed = JSON.parse(data);
+    childId = parsed.childId;
+  } catch {
+    // If dragging from grid, data is just the file id
+    childId = data;
+  }
 
-    updatedItems = updatedItems.map((item) => {
-      if (item.id === fileId && !item.parentFolderId)
-      {
-        fileToMove = {...item};
-        return null;
-      } 
-      else if (item.type === "folder" && item.children)
-      {
-        const childIndex = item.children.findIndex(child => child.id === fileId);
-        if (childIndex !== -1) {
-          fileToMove = {...item.children[childIndex]};
-          return{
-            ...item,
-            children: item.children.filter(child => child.id !== fileId)
-          };
-      }
-    }
-    return item;
-    }).filter(Boolean);
+  setItems(prev =>
+    prev.map(it =>
+      it.id === childId ? { ...it, parentFolderId: folderId } : it
+    )
+  );
 
-    if (!fileToMove) return prevItems;
-
-    updatedItems = updatedItems.map((item) => {
-      if (item.id === folderId && item.type === "folder") {
-        return {
-          ...item,
-          children: [
-            ...(item.children || []),
-            { ...fileToMove, parentFolderId: folderId }
-          ]
-        };
-      }
-      return item;
-    });
-    return updatedItems;
-  });
   setDragOverFolder(null);
 };
 
@@ -344,7 +322,6 @@ const handleFolderDrop = (e, folderId) => {
     <div>
       <div className="container">
         {/* PNG background layers (unchanged visuals) */}
-        <img className="Background-Bubble" src={BackgroundBubble} alt="Background Bubble" style={{ zIndex: 1 }} />
 
         {/* INTERACTIVE GRID — uses Grid.png as a background image */}
         <div
@@ -364,130 +341,141 @@ const handleFolderDrop = (e, folderId) => {
 </button>
   <input ref={inputRef} type="file" multiple onChange={onPick} style={{ display: "none" }} />
 
-  {/* Render placed items */}
-  {items
-  .filter(it => it.parentFolderId === null || it.parentFolderId === undefined) // only top-level items
-  .map((it) => (
-    <div
-      key={it.id}
-      className="grid-item"
-      style={{ left: it.x, top: it.y }}
-      draggable={true}
-      onPointerDown={(e) => onItemPointerDown(e, it.id)}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", it.id);
-      }}
-    >
-      {it.type === "folder" ? (
-        <div className="grid-item-folder-wrapper">
-          <div className="grid-item-folder" title={it.name}>
-            📁 {it.name}
-          </div>
+{/* Render folders with drop zones and children */}
+{items
+  .filter(it => it.type === "folder" && it.parentFolderId === null)
+  .map(folder => {
+    const children = items.filter(it => it.parentFolderId === folder.id);
+    const isExpanded = expandedFolders[folder.id] ?? true;
 
-          {/* Square drop files in folder zone */}
-          <div
-            className={`folder-drop-zone ${dragOverFolder === it.id ? "drag-over" : ""}`}
-            onDrop={(e) => handleFolderDrop(e, it.id)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragOverFolder(it.id);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragOverFolder(null);
-            }}
-          >
-            ➕
-          </div>
+    return (
+      <div
+        key={folder.id}
+        style={{
+          left: folder.x,
+          top: folder.y,
+          position: "absolute",
+          width: 120, // adjust bubble width
+          height: 120, // dynamic height
+          cursor: "grab",
+        }}
+        draggable
+        onPointerDown={(e) => onItemPointerDown(e, folder.id)}
+        onDragStart={(e) => e.dataTransfer.setData("text/plain", folder.id)}
+      >
+        {/* Collapse / Expand button */}
+        <img
+          className="folder-toggle-button"
+          src={expandedFolders[folder.id] ? CollapseFolderButton : ExpandFolderButton}
+          alt="Toggle"
+          onClick={() =>
+            setExpandedFolders((prev) => ({
+              ...prev,
+              [folder.id]: !prev[folder.id],
+            }))
+          }
+        />
 
-          {/* Square remove-from-folder drop zone */}
-          <div
-            className={`folder-remove-zone ${dragOverFolder === it.id + "-remove" ? "drag-over" : ""}`}
-            onDrop={(e) =>
-              {
-              e.preventDefault();
-              const data = e.dataTransfer.getData("text/plain");
-              if (!data) return;
 
-              // Move file back to grid
-              const { folderId, childId } = JSON.parse(data);
-              const { x, y } = toGrid(e.clientX, e.clientY);
-              if (folderId && childId)
-              {
-                takeChildOut(folderId, childId, x, y);
-              }
-              else
-              {
-                moveItemToGrid(childId, x, y);
-              }
-              setDragOverFolder(null);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragOverFolder(it.id + "-remove");
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragOverFolder(null);
-            }}
-          >
-            ➖
-          </div>
+        {/* Folder Bubble */}
+        <img src={FolderBackground} alt="Folder" className="folder-background" />
 
-          {/* Render children */}
-          {it.children && it.children.map((child) => (
+        {/* Add file to Folder Zone */}
+        <img
+          src={AddFolderButton}
+          alt="Add File"
+          className={`folder-drop-zone ${dragOverFolder === folder.id ? "drag-over" : ""}`}
+          onDrop={(e) => handleFolderDrop(e, folder.id)}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragEnter={(e) => { e.preventDefault(); setDragOverFolder(folder.id); }}
+          onDragLeave={(e) => { e.preventDefault(); setDragOverFolder(null); }}
+        />
+
+        {/* Remove file from folder Zone */}
+        <img
+          src={RemoveFolderButton}
+          alt="Remove File"
+          className={`folder-remove-zone ${dragOverFolder === folder.id + "-remove" ? "drag-over" : ""}`}
+          onDrop={(e) => {
+            e.preventDefault();
+            const data = e.dataTransfer.getData("text/plain");
+            if (!data) return;
+
+            let childId;
+            try {
+              const parsed = JSON.parse(data);
+              childId = parsed.childId || parsed;
+            } catch {
+              childId = data;
+            }
+
+            const { x, y } = toGrid(e.clientX, e.clientY);
+            moveItemToGrid(childId, x, y);
+            setDragOverFolder(null);
+          }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragEnter={(e) => { e.preventDefault(); setDragOverFolder(folder.id + "-remove"); }}
+          onDragLeave={(e) => { e.preventDefault(); setDragOverFolder(null); }}
+        />
+
+        {/* Folder Name Bubble */}
+        <img src={FolderNameBubble} alt="Name Bubble" className="folder-name-bubble" />
+        <div className="folder-name-text">{folder.name}</div>
+
+        {/* Render Children Inside Folder */}
+        {isExpanded &&
+          children.map((child, index) => (
             <div
-              key={child.id} 
+              key={child.id}
+              className="grid-item"
+              style={{
+                position: "absolute",
+                left: -3.5, // offset inside folder bubble
+                top: 105 + 50 * index, // adjust stack of children below the folder name bubble
+              }}
               draggable
+              onPointerDown={(e) => onItemPointerDown(e, child.id)}
               onDragStart={(e) => {
-              e.stopPropagation();
-              // tell the drop zone which file & folder this came from
-              e.dataTransfer.setData("text/plain", JSON.stringify({
-                folderId: it.id,
-                childId: child.id
-              }));
-            }}
-            
-            title={child.name}
+                e.stopPropagation();
+                e.dataTransfer.setData(
+                  "text/plain",
+                  JSON.stringify({ folderId: folder.id, childId: child.id })
+                );
+              }}
             >
               {child.type === "image" ? (
-                <>
-                  <img
-                    src={child.url}
-                    alt={child.name}
-                    className="grid-item-thumb"
-                    draggable={false}  // 🚫 stops raw image dragging
-                  />
-                  <div className="folder-child-name">{child.name}</div>
-                </>
+                <img src={child.url} alt={child.name} className="grid-item-thumb" draggable={false} />
               ) : (
-                <>
-                  <div className="grid-item-file" title={child.name}>
-                    📄 {child.name}
-                  </div>
-                  <div className="folder-child-name">{child.name}</div>
-                </>
+                <div className="grid-item-file" title={child.name}>📄 {child.name}</div>
               )}
             </div>
-            ))}
-          </div>
-      ) : it.type === "image" ? (
-        <img src={it.url} alt={it.name} className="grid-item-thumb" />
+          ))}
+      </div>
+    );
+  })}
+
+
+{/* Render top-level files not in any folder */}
+{items
+  .filter(it => it.parentFolderId === null && it.type !== "folder")
+  .map(file => (
+    <div
+      key={file.id}
+      className="grid-item"
+      style={{ left: file.x, top: file.y }}
+      draggable
+      onPointerDown={(e) => onItemPointerDown(e, file.id)}
+      onDragStart={(e) => e.dataTransfer.setData("text/plain", file.id)}
+    >
+      {file.type === "image" ? (
+        <img src={file.url} alt={file.name} className="grid-item-thumb" />
       ) : (
-        <div className="grid-item-file" title={it.name}>
-          📄 {it.name}
-        </div>
+        <div className="grid-item-file" title={file.name}>📄 {file.name}</div>
       )}
     </div>
-))}
+  ))}
+
+
 
 </div>
 
@@ -496,7 +484,7 @@ const handleFolderDrop = (e, folderId) => {
   style={{
     position: "absolute",
     top: 10,
-    right: 10,
+    left: 200,
     width: 80,
     height: 80,
     background: "red",
@@ -523,18 +511,28 @@ const handleFolderDrop = (e, folderId) => {
 
         {/* Other PNG layers */}
         <div className="LeftSidebarWrapper">
-          <img className="Left-Sidebar" src={LeftSidebar} alt="Left Sidebar" style={{ zIndex: 3 }} />
-          <div className="SidebarFileList">
-          {items.filter(it => !it.parentFolderId).map((it) => (
-            <div key={it.id} className="file-name">{it.name}</div>
-          ))}
+          <img 
+          src={LeftSidebar} 
+          alt="LeftSidebar" 
+          draggable={false}  // prevents dragging the image
+          className="left-sidebar"  // optional CSS styling
+          />
+          <SidebarFileList items={items} />
         </div>
 
+        <img 
+          src={LogoImage} 
+          alt="LogoImage" 
+          draggable={false}  // prevents dragging the image
+          className="logo-image"  // optional CSS styling
+        />
 
-        </div>
-
-        <img className="Right-Sidebar" src={RightSidebar} alt="Right Sidebar" style={{ zIndex: 3 }} />
-        <img className="Cramberry-Logo" src={CramberryLogo} alt="Cramberry Logo" style={{ zIndex: 4 }} />
+        <img 
+          src={Canvas} 
+          alt="CanvasImage" 
+          draggable={false}  // prevents dragging the image
+          className="canvas-image"  // optional CSS styling
+        />
 
         <GridButton style={{transform: "scale(0.5)", transformOrigin: "center", position: "absolute", top: "-5px", left: "1240px", zIndex: 10 }} />
       </div>
