@@ -10,10 +10,11 @@ import FolderBackground from "./assets/FolderBackground.png";
 import FolderNameBubble from "./assets/FolderNameBubble.png";
 import CollapseFolderButton from "./assets/CollapseFolderButton.png";
 import ExpandFolderButton from "./assets/CollapseFolderButton.png";
-import AddFolderButton from "./assets/AddFileLogo.png";
+import AddFileButton from "./assets/AddFileLogo.png";
 import RemoveFolderButton from "./assets/RemoveFileLogo.png";
-
-import GridButton from "./Buttons";
+import DeleteButton from "./assets/DeleteButton.png";
+import UploadFileButton from "./assets/UploadFileButton.png";
+import AddFolderButton from "./assets/AddFolderButton.png";
 
 import SidebarFileList from "./SidebarFileList";
 
@@ -333,14 +334,7 @@ const handleFolderDrop = (e, folderId) => {
           onPointerMove={onGridPointerMove}
           onPointerUp={onGridPointerUp}
         >
-          {/* Top-right helper to pick files */}
-          <button className="grid-upload-btn" onClick={openPicker}>+ Upload file</button>
-          <button className="folder-create-btn" onClick={() => { const newFolder = createFolder(); setItems((prev) => [...prev, newFolder]);}}
->
-  + Create Folder
-</button>
-  <input ref={inputRef} type="file" multiple onChange={onPick} style={{ display: "none" }} />
-
+          
 {/* Render folders with drop zones and children */}
 {items
   .filter(it => it.type === "folder" && it.parentFolderId === null)
@@ -374,21 +368,23 @@ const handleFolderDrop = (e, folderId) => {
               [folder.id]: !prev[folder.id],
             }))
           }
+          draggable={false}
         />
 
 
         {/* Folder Bubble */}
-        <img src={FolderBackground} alt="Folder" className="folder-background" />
+        <img src={FolderBackground} alt="Folder" className="folder-background" draggable={false}/>
 
         {/* Add file to Folder Zone */}
         <img
-          src={AddFolderButton}
+          src={AddFileButton}
           alt="Add File"
           className={`folder-drop-zone ${dragOverFolder === folder.id ? "drag-over" : ""}`}
           onDrop={(e) => handleFolderDrop(e, folder.id)}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={(e) => { e.preventDefault(); setDragOverFolder(folder.id); }}
           onDragLeave={(e) => { e.preventDefault(); setDragOverFolder(null); }}
+          draggable={false}
         />
 
         {/* Remove file from folder Zone */}
@@ -413,13 +409,14 @@ const handleFolderDrop = (e, folderId) => {
             moveItemToGrid(childId, x, y);
             setDragOverFolder(null);
           }}
+          draggable={false}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={(e) => { e.preventDefault(); setDragOverFolder(folder.id + "-remove"); }}
           onDragLeave={(e) => { e.preventDefault(); setDragOverFolder(null); }}
         />
 
         {/* Folder Name Bubble */}
-        <img src={FolderNameBubble} alt="Name Bubble" className="folder-name-bubble" />
+        <img src={FolderNameBubble} alt="Name Bubble" className="folder-name-bubble" draggable={false}/>
         <div className="folder-name-text">{folder.name}</div>
 
         {/* Render Children Inside Folder */}
@@ -485,23 +482,18 @@ const handleFolderDrop = (e, folderId) => {
 
 </div>
 
-<div
+<img
+  src={DeleteButton}
+  alt="Delete"
   className="delete-zone"
   style={{
     position: "absolute",
     top: 10,
-    left: 200,
-    width: 80,
-    height: 80,
-    background: "red",
-    color: "white",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
+    left: 1000,
+    width: 60,
+    height: 60,
     cursor: "pointer",
-  }}
+  }} draggable={false}
   onDragOver={(e) => e.preventDefault()} // allow drop
   onDrop={(e) => {
     e.preventDefault();
@@ -511,9 +503,41 @@ const handleFolderDrop = (e, folderId) => {
       console.log("Deleted via trash:", id);
     }
   }}
->
-  🗑 Delete
-</div>
+/>
+
+{/* Buttons moved outside the grid container */}
+<img
+  src={UploadFileButton}
+  alt="Upload File"
+  className="grid-upload-btn"
+  onClick={openPicker}
+  style={{
+    position: "absolute",
+    top: 2,
+    left: 1125,
+    width: 60,
+    height: 60,
+    cursor: "pointer",
+  }}
+/>
+<img
+  src={AddFolderButton}
+  alt="Create Folder"
+  className="folder-create-btn"
+  onClick={() => {
+    const newFolder = createFolder();
+    setItems((prev) => [...prev, newFolder]);
+  }}
+  style={{
+    position: "absolute",
+    top: 2,
+    left: 1055,
+    width: 60,
+    height: 60,
+    cursor: "pointer",
+  }}
+/>
+<input ref={inputRef} type="file" multiple onChange={onPick} style={{ display: "none" }} />
 
         {/* Other PNG layers */}
         <div className="LeftSidebarWrapper">
@@ -540,7 +564,6 @@ const handleFolderDrop = (e, folderId) => {
           className="canvas-image"  // optional CSS styling
         />
 
-        <GridButton style={{transform: "scale(0.5)", transformOrigin: "center", position: "absolute", top: "-5px", left: "1240px", zIndex: 10 }} />
       </div>
 
       <div>

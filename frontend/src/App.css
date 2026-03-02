@@ -89,8 +89,8 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
 
-  z-index: 20;
-  background: transparent;
+  z-index: 20;  background: transparent;
+  color: #ffffff; /* Changed text color to white */
 }
 
 .file-name {
@@ -144,7 +144,6 @@ html, body {
   padding: 8px 12px;
   border-radius: 10px;
   border: none;
-  background: rgba(255,255,255,0.9);
   cursor: pointer;
   font-weight: 600;
 }
@@ -156,7 +155,6 @@ html, body {
   padding: 8px 12px;
   border-radius: 10px;
   border: none;
-  background: rgba(255,255,255,0.9);
   cursor: pointer;
   font-weight: 600;
 }
@@ -335,6 +333,7 @@ above <div className="folder-child-name">{child.name}</div> for bubble under fil
 .file-item {
   display: flex;
   align-items: center;
+  background: #ffffff;
 }
 
 .folder-bubble:hover, .file-bubble:hover {
