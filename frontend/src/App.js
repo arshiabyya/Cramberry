@@ -46,7 +46,7 @@ export default function App() {
     return filtered;
   });
 
-    fetch(process.env.REACT_APP_NGROK_URL || "https://44b5-2601-646-9900-2ad0-ed49-c99f-ba-3a87.ngrok-free.app/api/hello", {
+    fetch(process.env.REACT_APP_NGROK_URL || "https://4887-2601-646-9900-2ad0-9df7-3cf3-3a5-67c5.ngrok-free.app/api/hello", {
       headers: { "ngrok-skip-browser-warning": "true" },
     })
       .then((response) => {
@@ -444,7 +444,10 @@ const handleFolderDrop = (e, folderId) => {
               }}
             >
               {child.type === "image" ? (
-                <img src={child.url} alt={child.name} className="grid-item-thumb" draggable={false} />
+                <>
+                  <img src={child.url} alt={child.name} className="grid-item-thumb" />
+                  <div className="file-name-text">{child.name}</div> {/* Added file name */}
+                </>
               ) : (
                 <div className="grid-item-file" title={child.name}>📄 {child.name}</div>
               )}
@@ -468,7 +471,10 @@ const handleFolderDrop = (e, folderId) => {
       onDragStart={(e) => e.dataTransfer.setData("text/plain", file.id)}
     >
       {file.type === "image" ? (
-        <img src={file.url} alt={file.name} className="grid-item-thumb" />
+        <>
+          <img src={file.url} alt={file.name} className="grid-item-thumb" />
+          <div className="file-name-text">{file.name}</div> {/* Added file name */}
+        </>
       ) : (
         <div className="grid-item-file" title={file.name}>📄 {file.name}</div>
       )}
